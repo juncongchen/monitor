@@ -1,44 +1,23 @@
 #!/usr/bin/env python
 
+
 def getMemData():
-    data = {
-        'MemTotal' : getMemTotal(),
-        'MemUsage' : getMemUsage(),
-        'MemFree' : getMemFree()
-    }
-    print 'MemData:'+ str(data)
-    return data
+    mem_info = {}
+    mem_data = {}
+    index = ['MemTotal','MemFree','Buffers','Cached','Active','Inactive']
 
-def getMemTotal():
-    with open('/proc/meminfo') as mem_open:
-        a = int(mem_open.readline().split()[1])
-    return a / 1024
-
-
-def getMemUsage(noBufferCache=True):
-    if noBufferCache:
-        with open('/proc/meminfo') as mem_open:
-            T = int(mem_open.readline().split()[1])
-            F = int(mem_open.readline().split()[1])
-            B = int(mem_open.readline().split()[1])
-            C = int(mem_open.readline().split()[1])
-        return (T - F - B - C) / 1024
-    else:
-        with open('/proc/meminfo') as mem_open:
-            a = int(mem_open.readline().split()[1]) - int(mem_open.readline().split()[1])
-        return a / 1024
-
-
-def getMemFree(noBufferCache=True):
-    if noBufferCache:
-        with open('/proc/meminfo') as mem_open:
-            T = int(mem_open.readline().split()[1])
-            F = int(mem_open.readline().split()[1])
-            B = int(mem_open.readline().split()[1])
-            C = int(mem_open.readline().split()[1])
-        return (F + B + C) / 1024
-    else:
-        with open('/proc/meminfo') as mem_open:
-            mem_open.readline()
-            a = int(mem_open.readline().split()[1])
-        return a / 1024
+    try:
+        with open('/proc/meminfo') as f:
+            for line in f:
+                tmp = line.split(':')
+                if len(tmp) == 2:
+                    vol_unit = tmp[1].strip().split(' ')
+                    mem_info[tmp[0].strip()] = vol_unit[0]
+    except:
+        print "Unexpected error:", sys.exc_info()[1]
+    finally:
+        for item in index:
+            mem_data[item] = mem_info[item]
+        mem_data['used'] = mem_data['MemTotal'] - mem_data['MemFree'] - mem_data['Buffers'] - mem_data['Cached']
+        print 'memdata: ' + mem_data
+        return mem_data
