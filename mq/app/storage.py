@@ -2,8 +2,11 @@
 # -*- coding: UTF-8 -*-
 import json
 import pymysql
+import datetime
+import time
 
-def receive(data):
+def receive(drop, data):
+
     data = json.loads(data)
 
     # 按日期批量插入
@@ -18,10 +21,11 @@ def receive(data):
                 datalist.append(item)
             else:
                 data.append(item)
-        storage(Date,datalist)
+        storage(drop, datalist)
+        drop = False
 
 
-def storage(datalist) :
+def storage(drop, datalist) :
     t_cpu = 't_cpu_' + str(datalist[0]['time'])[0:8]
     t_mem = 't_mem_' + str(datalist[0]['time'])[0:8]
     cpu_column = "time, host_id, user, nice , system ,idle, iowait , irq , softirq , stealstolen "
@@ -76,12 +80,23 @@ def storage(datalist) :
         inster_cpu_sql += "%(user)s, %(nice)s, %(system)s, %(idle)s, %(iowait)s, %(irq)s, %(softirq)s, %(stealstolen)s ) " %cpuData
         inster_mem_sql += " %(MemTotal)s, %(Used)s, %(MemFree)s, %(Buffers)s, %(Cached)s, %(Active)s, %(Inactive)s)" % memData
 
+        # 删表语句
+        today = datetime.datetime.now()
+        delta = datetime.timedelta(days=7)
+        before = today - delta
+        drop_cpu_sql = """DROP TABLE IF EXISTS  %s""" % 't_cpu_' + before.strftime('%Y%m%d')
+        drop_mem_sql = """DROP TABLE IF EXISTS  %s""" % 't_mem_' + before.strftime('%Y%m%d')
+
     # 建立数据库连接，使用cursor()方法获取操作游标
     db = pymysql.connect("localhost", "root", "123456", "monitor")
     cursor = db.cursor()
 
     try:
         # 执行SQL语句
+        if drop:
+            print('drop table')
+            cursor.execute(drop_cpu_sql)
+            cursor.execute(drop_mem_sql)
         cursor.execute(create_cpu_sql)
         cursor.execute(inster_cpu_sql)
         cursor.execute(create_mem_sql)
@@ -94,6 +109,7 @@ def storage(datalist) :
     db.close()
 
 
+
 if __name__ == "__main__":
     data = [{"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 0.0, "guest": 0.0, "idle": 100.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286596", "Active": "438600", "Used": 356584, "Buffers": "44996"}, "time": "201810220001"},
             {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 1.01, "guest": 0.0, "idle": 98.989999999999995, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286604", "Active": "438612", "Used": 356576, "Buffers": "45004"}, "time": "201810220002"},
@@ -101,4 +117,13 @@ if __name__ == "__main__":
             {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 1.0, "guest": 0.0, "idle": 99.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286612", "Active": "438628", "Used": 356568, "Buffers": "45012"}, "time": "201810230004"},
             {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 0.0, "guest": 0.0, "idle": 100.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506096", "MemFree": "96440", "Inactive": "286612", "Active": "438640", "Used": 356564, "Buffers": "45012"}, "time": "201810230005"}]
 
-    receive(data)
+    data = json.dumps(data)
+    today = datetime.datetime.now()
+    while True :
+        drop = False
+        if today != datetime.datetime.now() :
+            drop =True
+            today = datetime.datetime.now()
+
+        receive(drop, data)
+        time.sleep(5)
