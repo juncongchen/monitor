@@ -1,14 +1,15 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import json
-import pymysql
 import datetime
 import time
+import MySQLdb
+# import fcntl
 
-def receive(drop, data):
+def receive(drop=False, data=[]):
 
     data = json.loads(data)
-
+    start = time.time()
     # 按日期批量插入
     while len(data)>0 :
         temp = data.pop(0)
@@ -22,7 +23,9 @@ def receive(drop, data):
             else:
                 data.append(item)
         storage(drop, datalist)
+        print(time.time() - start)
         drop = False
+
 
 
 def storage(drop, datalist) :
@@ -81,14 +84,15 @@ def storage(drop, datalist) :
         inster_mem_sql += " %(MemTotal)s, %(Used)s, %(MemFree)s, %(Buffers)s, %(Cached)s, %(Active)s, %(Inactive)s)" % memData
 
         # 删表语句
-        today = datetime.datetime.now()
-        delta = datetime.timedelta(days=7)
-        before = today - delta
-        drop_cpu_sql = """DROP TABLE IF EXISTS  %s""" % 't_cpu_' + before.strftime('%Y%m%d')
-        drop_mem_sql = """DROP TABLE IF EXISTS  %s""" % 't_mem_' + before.strftime('%Y%m%d')
+        if drop:
+            today = datetime.datetime.now()
+            delta = datetime.timedelta(days=7)
+            before = today - delta
+            drop_cpu_sql = """DROP TABLE IF EXISTS  %s""" % 't_cpu_' + before.strftime('%Y%m%d')
+            drop_mem_sql = """DROP TABLE IF EXISTS  %s""" % 't_mem_' + before.strftime('%Y%m%d')
 
     # 建立数据库连接，使用cursor()方法获取操作游标
-    db = pymysql.connect("localhost", "root", "123456", "monitor")
+    db = MySQLdb.connect("localhost", "root", "123456", "monitor")
     cursor = db.cursor()
 
     try:
@@ -111,19 +115,23 @@ def storage(drop, datalist) :
 
 
 if __name__ == "__main__":
-    data = [{"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 0.0, "guest": 0.0, "idle": 100.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286596", "Active": "438600", "Used": 356584, "Buffers": "44996"}, "time": "201810220001"},
-            {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 1.01, "guest": 0.0, "idle": 98.989999999999995, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286604", "Active": "438612", "Used": 356576, "Buffers": "45004"}, "time": "201810220002"},
-            {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 0.0, "guest": 0.0, "idle": 100.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286604", "Active": "438620", "Used": 356576, "Buffers": "45004"}, "time": "201810220003"},
-            {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 1.0, "guest": 0.0, "idle": 99.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506092", "MemFree": "96440", "Inactive": "286612", "Active": "438628", "Used": 356568, "Buffers": "45012"}, "time": "201810230004"},
-            {"cpudata": {"softirq": 0.0, "iowait": 0.0, "system": 0.0, "guest": 0.0, "idle": 100.0, "stealstolen": 0.0, "user": 0.0, "irq": 0.0, "nice": 0.0}, "host": "host01", "memdata": {"MemTotal": "1004112", "Cached": "506096", "MemFree": "96440", "Inactive": "286612", "Active": "438640", "Used": 356564, "Buffers": "45012"}, "time": "201810230005"}]
-
-    data = json.dumps(data)
-    today = datetime.datetime.now()
+    today = datetime.datetime.now().strftime('%Y%m%d')
     while True :
         drop = False
-        if today != datetime.datetime.now() :
+        if today != datetime.datetime.now().strftime('%Y%m%d') :  # 判断是否需要删除过期的表格
             drop =True
-            today = datetime.datetime.now()
-
-        receive(drop, data)
-        time.sleep(5)
+            today = datetime.datetime.now().strftime('%Y%m%d')
+        with open('./cache.txt','r+') as f:
+            # fcntl.flock(f, fcntl.LOCK_EX)  # 为了避免同时操作文件，对文件进行加锁。这里如果检查到已经加锁了，进程会被阻塞
+            data = f.read()
+            try:
+                receive(drop, data)
+            except Exception as e :
+                print(e)
+            else:
+                data = []
+            f.seek(0)
+            f.truncate()
+            f.write(json.dumps(data))
+            f.close()
+        time.sleep(30)      # 定期连接数据库

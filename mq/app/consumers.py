@@ -2,7 +2,10 @@
 # -*- coding: UTF-8 -*-
 import pika
 import datetime
-from app import storage
+import json
+import time
+# import fcntl
+from app import storage2
 
 # 创建socket链接,声明管道
 connect = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
@@ -10,7 +13,7 @@ channel = connect.channel()
 # 声明exchange名字和类型
 channel.exchange_declare(exchange="practice", exchange_type="fanout")
 
-args = {'x-message-ttl':3000000, 'x-max-length-bytes': 102400}
+args = {'x-message-ttl':864000000, 'x-max-length-bytes': 5000000000}
 result = channel.queue_declare(queue='monitor',durable=True,arguments=args)
 queue_name = result.method.queue
 print('当前queue名称：', queue_name)
@@ -22,14 +25,17 @@ today = datetime.datetime.now().strftime('%Y%m%d')
 
 # 回调函数
 def callback(ch, method, properties, body):
+    start = time.time()
     data = str("{0}".format(body)).strip( 'b\'' )
-    drop = False
-    global today
-    if today != datetime.datetime.now().strftime('%Y%m%d') :    # 若日期发生变化则触发删表操作
-        drop =True
-        today = datetime.datetime.now().strftime('%Y%m%d')
-    storage.receive(drop, data)
-    print(today,drop,data)
+    with open('./cache.txt', 'r+') as f:
+        # fcntl.flock(f, fcntl.LOCK_EX)   # 为了避免同时操作文件，对文件进行加锁。这里如果检查到已经加锁了，进程会被阻塞
+        cache = json.loads(f.read())
+        cache.extend(json.loads(data))
+        f.seek(0)
+        f.truncate()
+        f.write(json.dumps(cache))
+        f.close()
+    print(time.time() - start)
 
 
 # 消费信息
