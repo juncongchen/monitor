@@ -1,11 +1,11 @@
 #!/usr/bin/env python#!/usr/bin/python
-# -*- coding: UTF-8 -*-
 import inspect
 import time
 import datetime
 import urllib, urllib2
 import json
 import socket
+import fcntl
 from pollster import cpu,mem
 
 
@@ -27,18 +27,22 @@ if __name__ == "__main__":
         host = getHost()
         cpudata = cpu.getCPUUsage()
         memdata = mem.getMemData()
+	with open('./cache') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            cache = json.loads(f.read())
+            print cache
         cache.append({'time':t,'host':host,'cpudata':cpudata,'memdata':memdata})
 	textmod = json.dumps(cache)
         print textmod
 	try:
-	    url='http://192.168.1.206:5000/post'
+	    url='http://10.1.177.33:5000/post'
 	    req = urllib2.Request(url,textmod,{'Content-Type': 'application/json'})
-	    res = urllib2.urlopen(req,timeout = 0.1)
-        except urllib2.URLError, e:
+	    res = urllib2.urlopen(req,timeout = 0.1) 
+        except urllib2.URLError, e: 
             try :
                 print 'retransmission'
-                res = urllib2.urlopen(req,timeout = 1)
-            except Exception,e :
+                res = urllib2.urlopen(req,timeout = 0.1) 
+            except Exception,e : 
                 print e
         except Exception,e :
             print e
@@ -46,5 +50,9 @@ if __name__ == "__main__":
             cache = []
             res = res.read()
 	    print(res)
+        with open('./cache','w+') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            f.write(json.dumps(cache))
+            f.close()
 
-        time.sleep(59)
+        time.sleep(1)
