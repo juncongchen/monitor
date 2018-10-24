@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 import time
+from collections import OrderedDict
+
 
 def read_proc_stat():
+    cpu_line = OrderedDict()
     with open('/proc/stat') as f:
         lines = f.readlines()
         line = lines[0]
         tmp = line.strip().split()
         cpu_line = tmp[1:len(tmp)]
+        # print cpu_line
     return cpu_line
 
 
@@ -24,7 +28,7 @@ def getCPUUsage():
                         float(cpu_line[4]) + float(cpu_line[5]) + float(cpu_line[6]) + \
                         float(cpu_line[7]) + float(cpu_line[8])
 
-        time.sleep(1)
+        time.sleep(0.1)
 
         cpu_line_2 = read_proc_stat()
 
@@ -38,7 +42,6 @@ def getCPUUsage():
 
         if total_1 and total_2:
             for i in range(len(index)):
-                cpu_usage[index[i]] = round(100 * ((float(cpu_line_2[i]) - float(cpu_line[i])) / float(total_2 - total_1)), 2)
-
+		cpu_usage['cpu.'+index[i]] = round(100 * ((float(cpu_line_2[i]) - float(cpu_line[i])) / float(total_2 - total_1)), 2)
     print 'cpu_usage: ' + str(cpu_usage)
     return cpu_usage
