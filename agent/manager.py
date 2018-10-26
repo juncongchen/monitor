@@ -58,4 +58,4 @@ if __name__ == "__main__":
             f.write(json.dumps(cache))
             f.close()
 
-        time.sleep(59)
+        time.sleep(60)
