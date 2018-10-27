@@ -5,7 +5,7 @@ from flask import request
 from app import app
 
 # 创建socket实例，声明管道
-credentials = pika.PlainCredentials('mx', 'zaq1@WSXcde3')
+# credentials = pika.PlainCredentials('mx', 'zaq1@WSXcde3')
 # connect = pika.BlockingConnection(pika.ConnectionParameters('localhost', 5672, '/', credentials))
 connect = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connect.channel()

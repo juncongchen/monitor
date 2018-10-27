@@ -8,8 +8,9 @@ import MySQLdb
 
 
 # 创建socket链接,声明管道
-credentials = pika.PlainCredentials('mx','zaq1@WSXcde3')
-connect = pika.BlockingConnection(pika.ConnectionParameters('10.2.147.50',5672,'/',credentials))
+# credentials = pika.PlainCredentials('mx','zaq1@WSXcde3')
+# connect = pika.BlockingConnection(pika.ConnectionParameters('localhost',5672,'/',credentials))
+connect = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connect.channel()
 # 声明exchange名字和类型
 channel.exchange_declare(exchange="practice", exchange_type="fanout")
@@ -25,10 +26,12 @@ channel.queue_bind(exchange="practice",
 today = datetime.datetime.now().strftime('%Y%m%d')
 
 # 建立数据库连接，使用cursor()方法获取操作游标
-db = MySQLdb.connect("10.2.147.50", "root", "zaq1@WSXcde3", "monitor")
+# db = MySQLdb.connect("localhost", "root", "zaq1@WSXcde3", "monitor")
+db = MySQLdb.connect("localhost", "root", "123456", "monitor")  # 本地
 cursor = db.cursor()
 
-sql = """INSERT  INTO t_%s (host_id,metric_id,time,value) VALUE ((SELECT id from t_host where name = %s), (SELECT id from t_metric where metric_name = %s), %s, %s)"""
+sql = """INSERT  INTO t_%s (host_id,metric_id,time,value,unit) VALUE ((SELECT id from t_host where name = %s), 
+        (SELECT id from t_metric where metric_name = %s), %s, %s, %s)"""
 
 # 将数据转化成sql语句的参数格式
 def getargs(data) :
@@ -39,8 +42,9 @@ def getargs(data) :
         host = d.pop('host')
         time = d.pop('time')
         table = int(str(time)[0:10])
+        min = str(time)[10:12]
         for key in d:
-            sql_arg.append((table, host, key, time, d[key]))
+            sql_arg.append((table, host, key, min, d[key]['value'], d[key]['unit']))
     # print(sql_arg)
     return sql_arg
 

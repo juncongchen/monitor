@@ -12,9 +12,13 @@ now = datetime.datetime.now()
 create_sql = """CREATE TABLE IF NOT EXISTS t_%d (
               `host_id` int(32) NOT NULL,
               `metric_id` int(32) NOT NULL,
-              `time` bigint(32) NULL,
+              `time` int(32) NULL,
               `value` bigint(32) NULL,
-              INDEX `time_host`(`time`, `host_id`)
+              `unit` varchar(32) NULL,
+              INDEX `host`(`host_id`) USING BTREE,
+              INDEX `metric`(`metric_id`) USING BTREE,
+              CONSTRAINT `%d_host` FOREIGN KEY (`host_id`) REFERENCES `t_host` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+              CONSTRAINT `%d_metric` FOREIGN KEY (`metric_id`) REFERENCES `t_metric` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
             ) ENGINE = InnoDB;"""
 delta = datetime.timedelta(days=1)
 tomorrow = int((now + delta).strftime('%Y%m%d')+'00')
@@ -37,13 +41,14 @@ while hour < 24:
 print(drop_list)
 
 # 建立数据库连接，使用cursor()方法获取操作游标
-db = MySQLdb.connect("10.2.147.50", "root", "zaq1@WSXcde3", "monitor")
+# db = MySQLdb.connect("10.2.147.50", "root", "zaq1@WSXcde3", "monitor")
+db = MySQLdb.connect("localhost", "root", "123456", "monitor")  # 本地
 cursor = db.cursor()
 
 try:
     # cursor.executemany(query=create_sql,args=times)
     for item in create_list:
-        cursor.execute(create_sql %item)
+        cursor.execute(create_sql %(item,item,item))
         cursor.execute(drop_sql %drop_list[create_list.index(item)])
     db.commit()
 except Exception as e:
