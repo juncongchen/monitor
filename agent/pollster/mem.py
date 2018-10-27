@@ -4,6 +4,7 @@
 def getMemData():
     mem_info = {}
     mem_data = {}
+    unit = "KB"
     index = ['MemTotal','MemFree','Buffers','Cached','Active','Inactive']
 
     try:
@@ -17,7 +18,7 @@ def getMemData():
         print "Unexpected error:", sys.exc_info()[1]
     finally:
         for item in index:
-            mem_data['mem.'+item] = mem_info[item]
-        mem_data['mem.Used'] = int(mem_info['MemTotal']) - int(mem_info['MemFree']) - int(mem_info['Buffers']) - int(mem_info['Cached'])
+            mem_data['mem.'+item] = {'value':mem_info[item],'unit':unit}
+        mem_data['mem.Used'] = {'value':int(mem_info['MemTotal']) - int(mem_info['MemFree']) - int(mem_info['Buffers']) - int(mem_info['Cached']), 'unit':unit}
         print 'memdata: ' + str(mem_data)
         return mem_data

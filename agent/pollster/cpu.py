@@ -21,6 +21,7 @@ def getCPUUsage():
     idle_1 = {}
     total_2 = {}
     idle_2 = {}
+    unit = "%"
 
     if cpu_line:
         total_1 = float(cpu_line[0]) + float(cpu_line[1]) + \
@@ -42,6 +43,6 @@ def getCPUUsage():
 
         if total_1 and total_2:
             for i in range(len(index)):
-		cpu_usage['cpu.'+index[i]] = round(100 * ((float(cpu_line_2[i]) - float(cpu_line[i])) / float(total_2 - total_1)), 2)
+		cpu_usage['cpu.'+index[i]] = {'value':round(100 * ((float(cpu_line_2[i]) - float(cpu_line[i])) / float(total_2 - total_1)), 2), 'unit':unit}
     print 'cpu_usage: ' + str(cpu_usage)
     return cpu_usage
