@@ -37,7 +37,7 @@ while hour < 24:
 print(drop_list)
 
 # 建立数据库连接，使用cursor()方法获取操作游标
-db = MySQLdb.connect("localhost", "root", "123456", "monitor")
+db = MySQLdb.connect("10.2.147.50", "root", "zaq1@WSXcde3", "monitor")
 cursor = db.cursor()
 
 try:

@@ -8,7 +8,8 @@ import MySQLdb
 
 
 # 创建socket链接,声明管道
-connect = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
+credentials = pika.PlainCredentials('mx','zaq1@WSXcde3')
+connect = pika.BlockingConnection(pika.ConnectionParameters('10.2.147.50',5672,'/',credentials))
 channel = connect.channel()
 # 声明exchange名字和类型
 channel.exchange_declare(exchange="practice", exchange_type="fanout")
@@ -24,7 +25,7 @@ channel.queue_bind(exchange="practice",
 today = datetime.datetime.now().strftime('%Y%m%d')
 
 # 建立数据库连接，使用cursor()方法获取操作游标
-db = MySQLdb.connect("localhost", "root", "123456", "monitor")
+db = MySQLdb.connect("10.2.147.50", "root", "zaq1@WSXcde3", "monitor")
 cursor = db.cursor()
 
 sql = """INSERT  INTO t_%s (host_id,metric_id,time,value) VALUE ((SELECT id from t_host where name = %s), (SELECT id from t_metric where metric_name = %s), %s, %s)"""

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <link rel="icon" href="../static/images/logo.png" type="image/x-coin">
+    <title>监控系统</title>
+
+    <!-- 引入 echarts.js -->
+    <script src="http://libs.baidu.com/jquery/1.7.2/jquery.min.js"></script>
+    <!-- 引入jquery.js -->
+    <script src="https://cdn.bootcss.com/echarts/4.1.0.rc2/echarts.min.js"></script>
+
+</head>
+
+<body>
+
+<div style="margin: 20px">
+    <h2><img src="../static/images/logo.png"> 运维监控系统</h2>
+</div>
+
+<div style="width: 1000px;height:50px;margin:0 auto ">
+    <span>
+        主机：<input id="host" type="text" style="margin-right: 20px">
+        指标：<input id="metric" type="text"style="margin-right: 20px">
+        时间范围：最近<input id="time" type="text" style="width: 30px;margin: 10px">小时
+        <button id="query" style="margin-right: 30px;margin-left: 30px">查询</button>
+        每<select id="ts" style="margin: 5px">
+            <option>--</option>
+            <option>5</option>
+            <option>10</option>
+            <option>30</option>
+        </select>秒刷新
+    </span>
+</div>
+
+<!-- 为ECharts准备一个具备大小（宽高）的Dom -->
+<div id="main" style="width: 1000px;height:500px;margin: 0 auto;"></div>
+
+<script type="text/javascript">
+
+    var myChart = echarts.init(document.getElementById('main'));
+    var host = document.getElementById('host').value;
+    var metric = document.getElementById('metric').value;
+    var time = document.getElementById('time').value;
+
+    var app = {
+        time:[],
+        legend:[],
+        value:{},
+        title:'',
+        unit:''
+    };
+
+    // 发送ajax请求，从后台获取json数据
+    $(document).ready(function () {
+       getData();
+       console.log(app.time);
+       console.log(app.legend);
+       console.log(app.value)
+    });
+
+    var button = document.getElementById('query');
+
+    button.onclick= function(){
+        host = document.getElementById('host').value;
+        metric = document.getElementById('metric').value;
+        time = document.getElementById('time').value;
+        console.log(host);
+        console.log(time);
+        console.log(metric);
+        getData();
+    }
+
+    function getData() {
+         $.ajax({
+            url:'/query',
+            data:{'host':host,'metric':metric,'time':time},
+            type:'POST',
+            async:false,
+            dataType:'json',
+            success:function(data) {
+                app.time = data.time;
+                app.legend = data.legend;
+                app.value = data.value;
+                app.title = data.title;
+                app.unit = data.unit;
+
+                myChart.setOption({
+                    title: {
+                        text: app.title
+                    },
+                    tooltip : {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross',
+                            label: {
+                                backgroundColor: '#6a7985'
+                            }
+                        }
+                    },
+                    legend: {
+                        data:app.legend
+                    },
+                    toolbox: {
+                        feature: {
+                            saveAsImage: {}
+                        }
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        containLabel: true
+                    },
+                    xAxis : [
+                        {
+                            name: "时间",
+                            type : 'category',
+                            boundaryGap : false,
+                            data : app.time
+                        }
+                    ],
+                    yAxis : [
+                        {
+                            name: app.unit,
+                            type : 'value'
+                        }
+                    ],
+
+                })
+                var option = []
+                for (var i=0;i<app.legend.length;i++){
+                    option.push(
+                        {
+                            name: app.legend[i],
+                            type:'line',
+                            stack: '总量',
+                            areaStyle: {},
+                            data:app.value[app.legend[i]]
+                        }
+                    )
+                }
+
+                for (var i=0;i<app.legend.length;i++){
+                    myChart.setOption({
+                        series : option
+                    })
+                }
+
+            },
+            error:function (msg) {
+                console.log(msg);
+                alert('系统发生错误');
+            }
+        })
+    };
+
+    {#定时刷新#}
+    {#setInterval("getData()",5000)#}
+
+</script>
+</body>
+</html>
+
