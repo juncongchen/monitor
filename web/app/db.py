@@ -61,18 +61,21 @@ def query(host,metric,range):
         cursor.execute(last_sql)
         data[str(last_table)] = cursor.fetchall()
         for item in table:
-            print(sql %item)
+            # print(sql %item)
             cursor.execute(sql %item)
             data[str(item)]=cursor.fetchall()
         db.commit()
         # print(data)
 
-        unit = data[str(last_table)][0][4]
+        unit = ''
         metriclist = []
         time = []
         value = {}
         for key in data:
+            if len(data[key])==0:
+                continue
             for item in data[key]:
+                unit = item[4]
                 z=str(item[1]).split('.')[1]
                 t=key+ ((str(item[2])) if len(str(item[2]))==2 else '0'+str(item[2]))
                 if metriclist.count(z) ==0 :
@@ -80,7 +83,7 @@ def query(host,metric,range):
                     value[z]=[]
                 if time.count(t) ==0 :
                     time.append(t)
-            # print(time, zhibiao)
+            # print(time, metriclist)
 
             for item in data[key]:
                 value[str(item[1]).split('.')[1]].append(item[3])
