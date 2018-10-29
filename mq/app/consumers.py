@@ -42,7 +42,7 @@ def getargs(data) :
         host = d.pop('host')
         time = d.pop('time')
         table = int(str(time)[0:10])
-        min = str(time)[10:12]
+        min = str(time)[10:]
         for key in d:
             sql_arg.append((table, host, key, min, d[key]['value'], d[key]['unit']))
     # print(sql_arg)

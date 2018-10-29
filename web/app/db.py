@@ -83,7 +83,7 @@ def query(host,metric,range):
                     value[z]=[]
                 if time.count(t) ==0 :
                     time.append(t)
-            # print(time, metriclist)
+            print(time, metriclist)
 
             for item in data[key]:
                 value[str(item[1]).split('.')[1]].append(item[3])

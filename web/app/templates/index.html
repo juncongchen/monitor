@@ -25,10 +25,11 @@
         时间范围：最近<input id="time" type="text" style="width: 30px;margin: 10px">小时
         <button id="query" style="margin-right: 30px;margin-left: 30px">查询</button>
         每<select id="ts" style="margin: 5px">
-            <option>--</option>
-            <option>5</option>
-            <option>10</option>
-            <option>30</option>
+            <option value="0">--</option>
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="30">30</option>
+            <option value="60">60</option>
         </select>秒刷新
     </span>
 </div>
@@ -42,6 +43,7 @@
     var host = document.getElementById('host').value;
     var metric = document.getElementById('metric').value;
     var time = document.getElementById('time').value;
+    var select = document.getElementById('ts');
 
     var app = {
         time:[],
@@ -72,6 +74,7 @@
     }
 
     function getData() {
+        console.log('getdata');
          $.ajax({
             url:'/query',
             data:{'host':host,'metric':metric,'time':time},
@@ -84,25 +87,20 @@
                 app.value = data.value;
                 app.title = data.title;
                 app.unit = data.unit;
-
+                console.log(app.legend);
                 myChart.setOption({
                     title: {
                         text: app.title
-                    },
-                    tooltip : {
-                        trigger: 'axis',
-                        axisPointer: {
-                            type: 'cross',
-                            label: {
-                                backgroundColor: '#6a7985'
-                            }
-                        }
                     },
                     legend: {
                         data:app.legend
                     },
                     toolbox: {
                         feature: {
+                            dataZoom: {
+                                yAxisIndex: 'none'
+                            },
+                            restore: {},
                             saveAsImage: {}
                         }
                     },
@@ -127,7 +125,8 @@
                         }
                     ],
 
-                })
+                },true)
+
                 var option = []
                 for (var i=0;i<app.legend.length;i++){
                     option.push(
@@ -145,7 +144,16 @@
                     myChart.setOption({
                         series : option
                     })
-                }
+                };
+                myChart.setOption({
+                    tooltip: {
+                        trigger: 'axis',
+                        position: function (pt) {
+                            return [pt[0], '10%'];
+                        }
+                    },
+
+                });
 
             },
             error:function (msg) {
@@ -157,6 +165,19 @@
 
     {#定时刷新#}
     {#setInterval("getData()",5000)#}
+
+    var timer;
+    select.onchange=function () {
+        var index=select.selectedIndex;
+        var ts = select.options[index].value;
+        if(ts!=0){
+            console.log('change');
+            timer=setInterval("getData()",ts*1000);
+        }else {
+            clearInterval(timer);
+        }
+
+    };
 
 </script>
 </body>
